@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KR Encoder</title>
+  <link rel="stylesheet" href="styles.css">
+  <script type="module" src="app.js"></script>
+</head>
+<body>
+  <main>
+    <nav class="tabs" role="tablist">
+      <button role="tab" id="tab-encoder" aria-controls="panel-encoder" aria-selected="true">Encoder/Decoder</button>
+      <button role="tab" id="tab-roman" aria-controls="panel-roman" aria-selected="false">Roman Numeral Converter</button>
+    </nav>
+
+    <section id="panel-encoder" role="tabpanel" aria-labelledby="tab-encoder">
+      <h1>Crypto Encoder/Decoder</h1>
+
+      <label for="mode">Mode</label>
+      <select id="mode">
+        <option>Text</option>
+        <option>Number</option>
+      </select>
+
+      <label for="input">Input</label>
+      <textarea id="input" rows="4"></textarea>
+
+      <label for="cipher">Cipher</label>
+      <select id="cipher"></select>
+
+      <label for="key">Key <span id="key-count">(0 chars)</span></label>
+      <input id="key" type="text" autocomplete="off" spellcheck="false">
+
+      <fieldset class="rsa">
+        <legend>RSA</legend>
+        <button id="rsa-generate" type="button">Generate RSA Keys</button>
+        <p id="rsa-status" class="status">RSA keys not generated</p>
+
+        <label for="public-key">Public Key</label>
+        <textarea id="public-key" rows="5" readonly></textarea>
+
+        <button id="rsa-export" type="button" disabled>Export private key</button>
+        <div id="export-box" hidden>
+          <p class="warning">Anyone who holds this private key can decrypt your messages. Keep it secret.</p>
+          <textarea id="private-key" rows="5" readonly></textarea>
+        </div>
+
+        <label for="import-pem">Import key (paste a PEM)</label>
+        <textarea id="import-pem" rows="4" spellcheck="false"></textarea>
+        <button id="rsa-import" type="button">Import key</button>
+
+        <label class="check"><input id="remember" type="checkbox"> Remember on this device</label>
+      </fieldset>
+
+      <div class="row">
+        <button id="encrypt" type="button" class="primary">Encrypt</button>
+        <button id="decrypt" type="button" class="primary">Decrypt</button>
+      </div>
+
+      <label for="result">Result</label>
+      <textarea id="result" rows="4" readonly></textarea>
+    </section>
+
+    <section id="panel-roman" role="tabpanel" aria-labelledby="tab-roman" hidden>
+      <h1>Roman Numeral Converter</h1>
+
+      <label for="roman-dir">Direction</label>
+      <select id="roman-dir">
+        <option value="toRoman">Number → Roman</option>
+        <option value="fromRoman">Roman → Number</option>
+        <option value="date">Date → Roman</option>
+      </select>
+
+      <label for="roman-input">Input</label>
+      <input id="roman-input" type="text" inputmode="numeric" autocomplete="off">
+
+      <button id="roman-convert" type="button" class="primary">Convert</button>
+
+      <label for="roman-result">Result</label>
+      <div class="row">
+        <input id="roman-result" type="text" readonly>
+        <button id="roman-copy" type="button">Copy</button>
+      </div>
+      <p id="roman-error" class="error" role="alert"></p>
+    </section>
+  </main>
+
+  <dialog id="popup">
+    <p id="popup-text"></p>
+    <form method="dialog"><button>OK</button></form>
+  </dialog>
+</body>
+</html>
