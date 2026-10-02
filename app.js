@@ -208,12 +208,7 @@ $('rsa-export').addEventListener('click', async () => {
   const { privatePem } = await rsaExport(rsaKeys);
   $('private-key').value = privatePem;
   $('export-box').hidden = false;
-  const url = URL.createObjectURL(new Blob([privatePem + '\n'], { type: 'application/x-pem-file' }));
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'krencoder-private-key.pem';
-  a.click();
-  URL.revokeObjectURL(url);
+  downloadText('krencoder-private-key.pem', privatePem + '\n', 'application/x-pem-file');
 });
 
 $('rsa-import').addEventListener('click', async () => {
@@ -239,10 +234,76 @@ if (stored) {
   rsaImport(stored).then(setKeys).catch(() => writeStored(null));
 }
 
+// ---- Files: open a .txt/.md file as the input, download the result ----
+// The file's exact text is kept here rather than read back from the textarea, because a textarea
+// turns \r\n into \n, which would change the file (and break Transposition ciphertext that contains \r).
+const FILE_MAX_BYTES = 2 * 1024 * 1024;
+let loadedFile = null; // { name, text }
+let lastResult = null; // { text, action, fileName } of the last successful Encrypt/Decrypt
+
+const formatSize = (bytes) => (bytes < 1024 ? `${bytes} B`
+  : bytes < 1024 * 1024 ? `${(bytes / 1024).toFixed(1)} KB` : `${(bytes / 1024 / 1024).toFixed(2)} MB`);
+
+// Size of AES output: Base64 of a 16-byte IV plus the PKCS#7-padded ciphertext.
+const aesOutputBytes = (inputBytes) => 4 * Math.ceil((16 + 16 * (Math.floor(inputBytes / 16) + 1)) / 3);
+
+function downloadText(name, text, type) {
+  const url = URL.createObjectURL(new Blob([text], { type }));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = name;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// notes.md + encrypt -> notes_encrypted.md; notes_encrypted.md + decrypt -> notes_decrypted.md
+// (the opposite suffix is dropped, so names don't pile up). Typed input (no file) -> message_encrypted.txt
+function resultFileName({ action, fileName }) {
+  const [, name, ext] = /^(.*?)(\.(?:txt|md))?$/i.exec(fileName ?? 'message.txt');
+  const opposite = action === 'encrypt' ? /_decrypted$/i : /_encrypted$/i;
+  return `${name.replace(opposite, '')}_${action}ed${ext ?? '.txt'}`;
+}
+
+$('file-open').addEventListener('click', () => $('file-input').click());
+$('file-input').addEventListener('change', async () => {
+  const file = $('file-input').files[0];
+  $('file-input').value = ''; // so choosing the same file again still fires change
+  if (!file) return;
+  if (!/\.(txt|md)$/i.test(file.name)) return popup('Please choose a .txt or .md file');
+  if (file.size > FILE_MAX_BYTES) return popup(`File is too large (${formatSize(file.size)}). The limit is 2 MB.`);
+  let text;
+  try {
+    text = new TextDecoder('utf-8', { fatal: true }).decode(await file.arrayBuffer());
+  } catch {
+    return popup('Could not read this file as UTF-8 text. Save it as UTF-8 and try again.');
+  }
+  loadedFile = { name: file.name, text };
+  $('input').value = text;
+  $('input').readOnly = true;
+  $('file-name').textContent = file.name;
+  $('file-size').textContent = `(${formatSize(file.size)})`;
+  $('file-status').hidden = false;
+});
+
+$('file-clear').addEventListener('click', () => {
+  loadedFile = null;
+  $('input').value = '';
+  $('input').readOnly = false;
+  $('file-status').hidden = true;
+  $('input').focus();
+});
+
+$('result-download').addEventListener('click', () => {
+  if (!lastResult) return;
+  const name = resultFileName(lastResult);
+  downloadText(name, lastResult.text, /\.md$/i.test(name) ? 'text/markdown;charset=utf-8' : 'text/plain;charset=utf-8');
+});
+
 // ---- Encrypt / Decrypt ----
 async function run(action) {
-  const text = $('input').value;
   const mode = $('mode').value;
+  // A number saved in a file usually ends with a newline; in Number mode, ignore surrounding whitespace.
+  const text = loadedFile ? (mode === 'Number' ? loadedFile.text.trim() : loadedFile.text) : $('input').value;
   const cipher = $('cipher').value;
   const keyText = $('key').value;
 
@@ -260,6 +321,15 @@ async function run(action) {
     ? `${cipher}${mode === 'Text' ? ' text' : ''} encryption error: `
     : '';
 
+  // AES output is about a third larger than its input; refuse files whose encrypted copy
+  // couldn't be opened here again for decrypting.
+  if (loadedFile && cipher === 'AES' && action === 'encrypt') {
+    const bytes = new TextEncoder().encode(text).length;
+    if (aesOutputBytes(bytes) > FILE_MAX_BYTES) {
+      return popup(`File too large for AES (${formatSize(bytes)}). Encrypted, it would be over the 2 MB limit for opening files.`);
+    }
+  }
+
   if (cipher === 'RSA' && !rsaKeys) {
     const msg = 'RSA keys not generated. Please generate RSA keys first.';
     return popup(mode === 'Number' ? msg : `Error: ${prefix}${msg}`);
@@ -275,6 +345,9 @@ async function run(action) {
       case 'RSA': result = action === 'encrypt' ? await rsaEncrypt(text, rsaKeys) : await rsaDecrypt(text, rsaKeys); break;
     }
     $('result').value = result;
+    lastResult = { text: result, action, fileName: loadedFile?.name ?? null };
+    $('result-download').disabled = false;
+    $('result-download').title = `Save as ${resultFileName(lastResult)}`;
   } catch (e) {
     popup(`Error: ${prefix}${e.message}`);
   }
@@ -325,10 +398,10 @@ $('roman-convert').addEventListener('click', romanConvert);
 
 // ---- Copy buttons (Encoder Result and Roman Result) ----
 // If the clipboard is blocked, the text is selected so it can be copied by hand.
-async function copyField(field, button) {
+async function copyField(field, button, text = field.value) {
   if (!field.value) return;
   try {
-    await navigator.clipboard.writeText(field.value);
+    await navigator.clipboard.writeText(text);
     button.textContent = 'Copied';
     setTimeout(() => { button.textContent = 'Copy'; }, 1500);
   } catch {
@@ -336,5 +409,5 @@ async function copyField(field, button) {
     popup('Could not copy. The result is selected, so copy it with Ctrl+C or a long press.');
   }
 }
-$('result-copy').addEventListener('click', () => copyField($('result'), $('result-copy')));
+$('result-copy').addEventListener('click', () => copyField($('result'), $('result-copy'), lastResult?.text));
 $('roman-copy').addEventListener('click', () => copyField($('roman-result'), $('roman-copy')));

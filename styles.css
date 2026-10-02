@@ -1,3 +1,27 @@
+/* JetBrains Mono, self-hosted (OFL, see fonts/OFL.txt). The NL ("no ligatures") cut keeps
+   ciphertext like -> or != as separate characters. Only the weights the styles use are loaded. */
+@font-face {
+  font-family: "JetBrains Mono NL";
+  src: url("fonts/webfonts/JetBrainsMonoNL-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono NL";
+  src: url("fonts/webfonts/JetBrainsMonoNL-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "JetBrains Mono NL";
+  src: url("fonts/webfonts/JetBrainsMonoNL-Bold.woff2") format("woff2");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Theme tokens. Light is the base; [data-theme="dark"] overrides it.
    data-theme is set before first paint by the inline script in index.html. */
 :root {
@@ -21,7 +45,7 @@
   --grid: rgba(0, 101, 119, 0.07);
   --haze: rgba(0, 104, 77, 0.06);
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  --font-mono: ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
+  --font-mono: "JetBrains Mono NL", ui-monospace, "Cascadia Mono", "SFMono-Regular", Menlo, Consolas, "Liberation Mono", monospace;
   color-scheme: light;
 }
 
@@ -236,6 +260,21 @@ fieldset.rsa > button { margin-top: 10px; }
 .field-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; margin-top: 14px; }
 .field-head label { margin: 0 0 4px; }
 .field-head button { margin-bottom: 4px; padding: 5px 14px; font-size: 0.9rem; }
+.field-actions { display: flex; gap: 6px; }
+
+/* "Using notes.md (2.3 KB)  [Clear file]" under Input while a file is loaded */
+.file-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 6px 0 0;
+  color: var(--muted);
+  font: 0.9rem/1.4 var(--font-mono);
+  overflow-wrap: anywhere;
+}
+.file-status strong { color: var(--text); }
+.file-status button { flex: 0 0 auto; padding: 4px 12px; font-size: 0.85rem; }
 
 /* ---- error/info popup ---- */
 dialog {

@@ -68,7 +68,13 @@ export function transposition(text, key, mode) {
 }
 
 // ---- Base64 helpers (standard alphabet, padded) ----
-const toB64 = (bytes) => btoa(String.fromCharCode(...bytes));
+// Built in 32 KB chunks: spreading a whole large array into fromCharCode overflows the call stack
+// (above ~65,000 bytes in Safari, ~125,000 in Chrome). Output is the same as a single call.
+const toB64 = (bytes) => {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+};
 function fromB64(s) {
   const clean = s.replace(/[^A-Za-z0-9+/=]/g, '');
   try {

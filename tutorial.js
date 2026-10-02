@@ -25,7 +25,8 @@ export const TUTORIAL = [
         ul: [
           'Caesar, Vigenere and Transposition are classic ciphers. They are fun and good for learning, but a computer breaks them in seconds, so never use them for real secrets. Use AES or RSA for anything sensitive.',
           '**Mode** chooses what you encrypt. **Text** offers all five ciphers; **Number** offers AES and RSA, and only whole numbers can be encrypted in it.',
-          'Everything runs in your browser. Your messages and keys are never sent to a server.',
+          'To work with a file, press **Open file** next to **Input** and choose a `.txt` or `.md` file (up to 2 MB; for AES, up to about 1.5 MB, since encrypting makes it about a third bigger). After **Encrypt** or **Decrypt**, **Download** saves the result as, e.g., `notes_encrypted.md`, and decrypting that file gives `notes_decrypted.md`. **Clear file** lets you type again.',
+          'Everything runs in your browser. Your messages, files and keys are never sent to a server.',
         ],
       },
     ],
@@ -99,7 +100,7 @@ export const TUTORIAL = [
       use: 'AES protects much of the data you use every day: HTTPS websites, Wi-Fi (WPA2 and WPA3), disk encryption such as BitLocker and FileVault, password managers and messaging apps.',
       encrypt: [
         'Choose **Text** or **Number** in **Mode**, then **AES** in **Cipher**.',
-        'Type your message in **Input**. In **Number** mode it must be a whole number, e.g. `4729`.',
+        'Type your message in **Input**, or open a file. In **Number** mode it must be a whole number, e.g. `4729`.',
         'Type your key in **Key**: 16, 24 or 32 characters in **Text** mode, exactly 32 in **Number** mode. The count next to **Key** helps. The app uses the key as it is, so make it long and random rather than a word.',
         'Press **Encrypt**, then **Copy** next to **Result** to copy all of it, including any `=` at the end.',
       ],

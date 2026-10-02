@@ -1,2 +1,9 @@
 docs/
 CLAUDE.md
+*:Zone.Identifier
+fonts/webfonts/*
+!fonts/webfonts/JetBrainsMonoNL-Regular.woff2
+!fonts/webfonts/JetBrainsMonoNL-Medium.woff2
+!fonts/webfonts/JetBrainsMonoNL-Bold.woff2
+OFL.txt
+krencoder-core-copy.mjs

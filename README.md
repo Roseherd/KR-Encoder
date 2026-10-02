@@ -16,4 +16,6 @@ Then open http://localhost:8000/.
 
 - `index.html`, `styles.css`, `app.js`: the page.
 - `krencoder-core.js`: all cipher and Roman numeral logic (pure ES module, works in browsers and Node 20+).
+- `tutorial.js`: the in-app tutorial content and its renderer.
+- `fonts/`: self-hosted JetBrains Mono NL (SIL Open Font License, see `fonts/OFL.txt`).
 - `.nojekyll`: lets GitHub Pages serve the files as-is.
