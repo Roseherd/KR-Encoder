@@ -4,10 +4,46 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>KR Encoder</title>
+  <script>
+    // Apply the saved theme before first paint (no flash). app.js keeps it in sync afterwards.
+    (function () {
+      var pref = 'system';
+      try { pref = localStorage.getItem('krencoder.theme') || 'system'; } catch (e) {}
+      if (pref !== 'light' && pref !== 'dark') pref = 'system';
+      var dark = pref === 'dark' || (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme-pref', pref);
+    })();
+  </script>
   <link rel="stylesheet" href="styles.css">
   <script type="module" src="app.js"></script>
 </head>
 <body>
+  <header class="site-header">
+    <div class="brand">
+      <h1><span class="prompt" aria-hidden="true">&gt;</span>KR Encoder<span class="cursor" aria-hidden="true">_</span></h1>
+      <p class="tagline">Encrypt and decrypt text or numbers with classic and modern ciphers, and convert Roman numerals.</p>
+    </div>
+
+    <div class="header-theme">
+      <fieldset class="theme-toggle">
+        <legend class="visually-hidden">Theme</legend>
+        <label><input type="radio" name="theme" value="light"><span>Light</span></label>
+        <label><input type="radio" name="theme" value="dark"><span>Dark</span></label>
+        <label><input type="radio" name="theme" value="system"><span>System</span></label>
+      </fieldset>
+    </div>
+
+    <div class="menu" id="menu">
+      <button id="menu-button" class="icon-button" type="button" aria-label="Menu" aria-expanded="false" aria-controls="app-menu">
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+      <div id="app-menu" class="menu-panel" hidden>
+        <ul id="menu-items"></ul>
+      </div>
+    </div>
+  </header>
+
   <main>
     <nav class="tabs" role="tablist">
       <button role="tab" id="tab-encoder" aria-controls="panel-encoder" aria-selected="true">Encoder/Decoder</button>
@@ -15,8 +51,6 @@
     </nav>
 
     <section id="panel-encoder" role="tabpanel" aria-labelledby="tab-encoder">
-      <h1>Crypto Encoder/Decoder</h1>
-
       <label for="mode">Mode</label>
       <select id="mode">
         <option>Text</option>
@@ -24,30 +58,30 @@
       </select>
 
       <label for="input">Input</label>
-      <textarea id="input" rows="4"></textarea>
+      <textarea id="input" rows="4" placeholder="Type your message, e.g. Meet at 9pm, or paste Caesar text to decode"></textarea>
 
       <label for="cipher">Cipher</label>
       <select id="cipher"></select>
 
       <label for="key">Key <span id="key-count">(0 chars)</span></label>
-      <input id="key" type="text" autocomplete="off" spellcheck="false">
+      <input id="key" type="text" autocomplete="off" spellcheck="false" placeholder="Shift as a whole number, e.g. 3">
 
-      <fieldset class="rsa">
+      <fieldset id="rsa-section" class="rsa" hidden>
         <legend>RSA</legend>
         <button id="rsa-generate" type="button">Generate RSA Keys</button>
         <p id="rsa-status" class="status">RSA keys not generated</p>
 
         <label for="public-key">Public Key</label>
-        <textarea id="public-key" rows="5" readonly></textarea>
+        <textarea id="public-key" rows="5" readonly placeholder="Generate or import a key to see the public key here"></textarea>
 
         <button id="rsa-export" type="button" disabled>Export private key</button>
         <div id="export-box" hidden>
           <p class="warning">Anyone who holds this private key can decrypt your messages. Keep it secret.</p>
-          <textarea id="private-key" rows="5" readonly></textarea>
+          <textarea id="private-key" rows="5" readonly placeholder="Your private key appears here when you export it"></textarea>
         </div>
 
         <label for="import-pem">Import key (paste a PEM)</label>
-        <textarea id="import-pem" rows="4" spellcheck="false"></textarea>
+        <textarea id="import-pem" rows="4" spellcheck="false" placeholder="Paste a whole PEM key: a PUBLIC KEY (encrypt only) or a PRIVATE KEY, BEGIN to END line"></textarea>
         <button id="rsa-import" type="button">Import key</button>
 
         <label class="check"><input id="remember" type="checkbox"> Remember on this device</label>
@@ -58,12 +92,15 @@
         <button id="decrypt" type="button" class="primary">Decrypt</button>
       </div>
 
-      <label for="result">Result</label>
-      <textarea id="result" rows="4" readonly></textarea>
+      <div class="field-head">
+        <label for="result">Result</label>
+        <button id="result-copy" type="button">Copy</button>
+      </div>
+      <textarea id="result" rows="4" readonly placeholder="Your encrypted or decrypted text appears here"></textarea>
     </section>
 
     <section id="panel-roman" role="tabpanel" aria-labelledby="tab-roman" hidden>
-      <h1>Roman Numeral Converter</h1>
+      <h2>Roman Numeral Converter</h2>
 
       <label for="roman-dir">Direction</label>
       <select id="roman-dir">
@@ -73,18 +110,40 @@
       </select>
 
       <label for="roman-input">Input</label>
-      <input id="roman-input" type="text" inputmode="numeric" autocomplete="off">
+      <input id="roman-input" type="text" inputmode="numeric" autocomplete="off" placeholder="1 to 3999, e.g. 2026">
 
       <button id="roman-convert" type="button" class="primary">Convert</button>
 
       <label for="roman-result">Result</label>
       <div class="row">
-        <input id="roman-result" type="text" readonly>
+        <input id="roman-result" type="text" readonly placeholder="e.g. MMXXVI">
         <button id="roman-copy" type="button">Copy</button>
       </div>
       <p id="roman-error" class="error" role="alert"></p>
     </section>
   </main>
+
+  <dialog id="tutorial" class="tutorial" aria-labelledby="tutorial-title">
+    <div class="tutorial-head">
+      <h2 id="tutorial-title">Tutorial</h2>
+      <button id="tutorial-close" class="icon-button" type="button" aria-label="Close tutorial">
+        <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+    <div class="tutorial-layout">
+      <nav class="tutorial-nav" aria-label="Tutorial sections"><ol id="tutorial-nav"></ol></nav>
+      <div id="tutorial-body" class="tutorial-body"></div>
+    </div>
+  </dialog>
+
+  <dialog id="confirm" aria-labelledby="confirm-title" aria-describedby="confirm-text">
+    <h2 id="confirm-title">Replace your RSA keys?</h2>
+    <p id="confirm-text"></p>
+    <form method="dialog" class="dialog-actions">
+      <button value="cancel" autofocus>Cancel</button>
+      <button value="replace" class="primary">Replace keys</button>
+    </form>
+  </dialog>
 
   <dialog id="popup">
     <p id="popup-text"></p>

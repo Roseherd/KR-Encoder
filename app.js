@@ -5,6 +5,7 @@ import {
   rsaGenerate, rsaExport, rsaImport, rsaEncrypt, rsaDecrypt,
   toRoman, fromRoman, dateToRoman,
 } from './krencoder-core.js';
+import { renderTutorial } from './tutorial.js';
 
 const $ = (id) => document.getElementById(id);
 const STORAGE_KEY = 'krencoder.rsaKey';
@@ -20,6 +21,82 @@ function popup(message) {
   $('popup').showModal();
 }
 
+// ---- theme: Light / Dark / System ----
+// The inline script in index.html applies the saved choice before first paint; this keeps it in sync.
+const THEME_KEY = 'krencoder.theme';
+const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+let themePref = document.documentElement.dataset.themePref || 'system';
+
+function applyTheme() {
+  const dark = themePref === 'dark' || (themePref === 'system' && darkQuery.matches);
+  document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  document.documentElement.dataset.themePref = themePref;
+}
+
+for (const radio of document.querySelectorAll('input[name="theme"]')) {
+  radio.checked = radio.value === themePref;
+  radio.addEventListener('change', () => {
+    themePref = radio.value;
+    try { localStorage.setItem(THEME_KEY, themePref); } catch { /* storage blocked: choice lasts for this visit */ }
+    applyTheme();
+  });
+}
+// System mode follows the OS live, e.g. when it switches to dark mode at sunset.
+darkQuery.addEventListener('change', () => { if (themePref === 'system') applyTheme(); });
+
+// ---- hamburger menu ----
+// Add more entries here; each renders as a button in the menu.
+const MENU_ITEMS = [
+  { label: 'Tutorial', action: openTutorial },
+];
+
+const menu = $('menu');
+const menuButton = $('menu-button');
+const menuPanel = $('app-menu');
+
+$('menu-items').replaceChildren(...MENU_ITEMS.map(({ label, action }) => {
+  const item = document.createElement('button');
+  item.type = 'button';
+  item.textContent = label;
+  item.addEventListener('click', () => { closeMenu(false); action(); });
+  const li = document.createElement('li');
+  li.append(item);
+  return li;
+}));
+
+function openMenu() {
+  menuPanel.hidden = false;
+  menuButton.setAttribute('aria-expanded', 'true');
+  menuPanel.querySelector('button').focus();
+}
+function closeMenu(returnFocus) {
+  if (menuPanel.hidden) return;
+  menuPanel.hidden = true;
+  menuButton.setAttribute('aria-expanded', 'false');
+  if (returnFocus) menuButton.focus();
+}
+
+menuButton.addEventListener('click', () => (menuPanel.hidden ? openMenu() : closeMenu(true)));
+menu.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !menuPanel.hidden) { e.preventDefault(); closeMenu(true); }
+});
+// Clicking anywhere outside closes the menu; so does tabbing out of it.
+document.addEventListener('click', (e) => { if (!menu.contains(e.target)) closeMenu(false); });
+menu.addEventListener('focusout', (e) => { if (e.relatedTarget && !menu.contains(e.relatedTarget)) closeMenu(false); });
+
+// ---- tutorial ----
+const tutorial = $('tutorial');
+const tutorialView = renderTutorial($('tutorial-nav'), $('tutorial-body'));
+
+function openTutorial() {
+  tutorial.showModal();
+  tutorialView.show(tutorialView.current());
+  tutorialView.navButton(tutorialView.current()).focus();
+}
+$('tutorial-close').addEventListener('click', () => tutorial.close());
+// Esc closes the dialog natively; either way, focus returns to the menu button that opened it.
+tutorial.addEventListener('close', () => menuButton.focus());
+
 // ---- tabs ----
 for (const tab of document.querySelectorAll('[role="tab"]')) {
   tab.addEventListener('click', () => {
@@ -32,10 +109,36 @@ for (const tab of document.querySelectorAll('[role="tab"]')) {
 }
 
 // ---- mode, cipher, key counter ----
+// Placeholder examples for the Input and Key fields, per mode and cipher.
+const RSA_KEY_HINT = 'Not used for RSA';
+const PLACEHOLDERS = {
+  Text: {
+    Caesar: ['Type your message, e.g. Meet at 9pm, or paste Caesar text to decode', 'Shift as a whole number, e.g. 3'],
+    Vigenere: ['Type your message, e.g. Meet at 9pm, or paste Vigenere text to decode', 'Keyword, e.g. lemon'],
+    Transposition: ['Type your message, e.g. Meet at 9pm, or paste Transposition text to decode', 'Number of columns, e.g. 8'],
+    AES: ['Type your message, e.g. Meet at 9pm, or paste AES ciphertext to decrypt', '16, 24 or 32 characters, e.g. sixteen byte key'],
+    RSA: ['Type your message (up to 214 bytes), or paste RSA ciphertext to decrypt', RSA_KEY_HINT],
+  },
+  Number: {
+    AES: ['Whole number, e.g. 4729, or paste AES ciphertext to decrypt', 'Exactly 32 characters, e.g. 0123456789abcdef0123456789abcdef'],
+    RSA: ['Whole number, e.g. 4729, or paste RSA ciphertext to decrypt', RSA_KEY_HINT],
+  },
+};
+
+// Called whenever the mode or cipher changes. The RSA section only shows for RSA;
+// `hidden` removes it from the layout and the tab order, and the keys stay in memory.
+function updateCipherUi() {
+  const cipher = $('cipher').value;
+  $('rsa-section').hidden = cipher !== 'RSA';
+  [$('input').placeholder, $('key').placeholder] = PLACEHOLDERS[$('mode').value][cipher];
+}
+
 function fillCiphers() {
   $('cipher').replaceChildren(...CIPHERS[$('mode').value].map((name) => new Option(name)));
+  updateCipherUi();
 }
 $('mode').addEventListener('change', fillCiphers);
+$('cipher').addEventListener('change', updateCipherUi);
 fillCiphers();
 
 function updateKeyCount() {
@@ -68,7 +171,27 @@ async function setKeys(keys) {
   if ($('remember').checked) writeStored(privatePem);
 }
 
+// Asks before replacing a loaded private key, which is gone for good unless it was exported.
+// Resolves true when there is nothing to lose or the user chooses "Replace keys".
+function confirmReplaceKeys(newHasPrivate) {
+  if (!rsaKeys?.privateKey) return Promise.resolve(true);
+  let message = 'This replaces the RSA keys in use. If you haven’t exported your private key, messages sent to your current public key can never be decrypted.';
+  if ($('remember').checked) {
+    message += newHasPrivate
+      ? ' The key saved on this device will be replaced too.'
+      : ' The key saved on this device will be deleted.';
+  }
+  $('confirm-text').textContent = message;
+  const dialog = $('confirm');
+  dialog.returnValue = '';
+  dialog.showModal();
+  return new Promise((resolve) => {
+    dialog.addEventListener('close', () => resolve(dialog.returnValue === 'replace'), { once: true });
+  });
+}
+
 $('rsa-generate').addEventListener('click', async () => {
+  if (!(await confirmReplaceKeys(true))) return;
   const btn = $('rsa-generate');
   btn.disabled = true;
   try {
@@ -95,7 +218,9 @@ $('rsa-export').addEventListener('click', async () => {
 
 $('rsa-import').addEventListener('click', async () => {
   try {
-    await setKeys(await rsaImport($('import-pem').value));
+    const keys = await rsaImport($('import-pem').value);
+    if (!(await confirmReplaceKeys(Boolean(keys.privateKey)))) return;
+    await setKeys(keys);
     $('import-pem').value = '';
   } catch (e) {
     popup(`Error: ${e.message}`);
@@ -178,26 +303,38 @@ function romanConvert() {
   }
 }
 
+// Placeholder examples for the Roman Input and Result fields, per direction.
+// (Browsers with a date picker don't display a placeholder; it shows where the date input falls back to text.)
+const ROMAN_PLACEHOLDERS = {
+  toRoman: ['1 to 3999, e.g. 2026', 'e.g. MMXXVI'],
+  fromRoman: ['Roman numeral, e.g. MMXXVI', 'e.g. 2026'],
+  date: ['YYYY-MM-DD, e.g. 2003-09-30', 'e.g. MMIII · IX · XXX'],
+};
+
 $('roman-dir').addEventListener('change', () => {
   const dir = $('roman-dir').value;
   const input = $('roman-input');
   input.value = '';
   input.type = dir === 'date' ? 'date' : 'text';
   input.inputMode = dir === 'toRoman' ? 'numeric' : 'text';
+  [input.placeholder, $('roman-result').placeholder] = ROMAN_PLACEHOLDERS[dir];
   romanConvert();
 });
 $('roman-input').addEventListener('input', romanConvert);
 $('roman-convert').addEventListener('click', romanConvert);
 
-$('roman-copy').addEventListener('click', async () => {
-  const value = $('roman-result').value;
-  if (!value) return;
+// ---- Copy buttons (Encoder Result and Roman Result) ----
+// If the clipboard is blocked, the text is selected so it can be copied by hand.
+async function copyField(field, button) {
+  if (!field.value) return;
   try {
-    await navigator.clipboard.writeText(value);
-    $('roman-copy').textContent = 'Copied';
-    setTimeout(() => { $('roman-copy').textContent = 'Copy'; }, 1500);
+    await navigator.clipboard.writeText(field.value);
+    button.textContent = 'Copied';
+    setTimeout(() => { button.textContent = 'Copy'; }, 1500);
   } catch {
-    $('roman-result').select();
+    field.select();
     popup('Could not copy. The result is selected, so copy it with Ctrl+C or a long press.');
   }
-});
+}
+$('result-copy').addEventListener('click', () => copyField($('result'), $('result-copy')));
+$('roman-copy').addEventListener('click', () => copyField($('roman-result'), $('roman-copy')));
