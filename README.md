@@ -1,4 +1,4 @@
-# KR Encoder (web)
+# KR Encoder
 
 Encrypt and decrypt text or numbers in the browser (Caesar, Vigenere, Transposition, AES, RSA), and convert Roman numerals. Everything runs locally with the Web Crypto API; nothing is sent to a server.
 
