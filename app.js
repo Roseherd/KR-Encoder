@@ -31,7 +31,11 @@ function applyTheme() {
   const dark = themePref === 'dark' || (themePref === 'system' && darkQuery.matches);
   document.documentElement.dataset.theme = dark ? 'dark' : 'light';
   document.documentElement.dataset.themePref = themePref;
+  // Browser bar colour follows the theme in use; the colour itself comes from --accent in styles.css.
+  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
+  for (const meta of document.querySelectorAll('meta[name="theme-color"]')) meta.content = accent;
 }
+applyTheme();
 
 for (const radio of document.querySelectorAll('input[name="theme"]')) {
   radio.checked = radio.value === themePref;

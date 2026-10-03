@@ -4,6 +4,24 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>KR Encoder</title>
+  <meta name="description" content="Encrypt and decrypt text or numbers in your browser with Caesar, Vigenere, Transposition, AES and RSA, and convert Roman numerals. Nothing is sent anywhere.">
+
+  <!-- Sharing preview (WhatsApp, X, Slack, ...). og:image must be an absolute URL to a PNG. -->
+  <meta property="og:title" content="KR Encoder">
+  <meta property="og:description" content="Encrypt and decrypt text or numbers in your browser with Caesar, Vigenere, Transposition, AES and RSA, and convert Roman numerals. Nothing is sent anywhere.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://krencoder.com/">
+  <meta property="og:image" content="https://krencoder.com/og-image.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="KR Encoder: encrypt and decrypt text or numbers in your browser">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <!-- Starting values per OS scheme; app.js keeps them in step with the Light/Dark/System toggle. -->
+  <meta name="theme-color" content="#00684d" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#00ff9c" media="(prefers-color-scheme: dark)">
   <script>
     // Apply the saved theme before first paint (no flash). app.js keeps it in sync afterwards.
     (function () {
@@ -25,6 +43,7 @@
     <div class="brand">
       <h1><span class="prompt" aria-hidden="true">&gt;</span>KR Encoder<span class="cursor" aria-hidden="true">_</span></h1>
       <p class="tagline">Encrypt and decrypt text or numbers with classic and modern ciphers, and convert Roman numerals.</p>
+      <p class="tagline">Everything runs in your browser; nothing is sent anywhere.</p>
     </div>
 
     <div class="header-theme">
@@ -136,6 +155,12 @@
       <p id="roman-error" class="error" role="alert"></p>
     </section>
   </main>
+
+  <footer class="site-footer">
+    <!-- The version lives here only: bump this line on each release. -->
+    <p>Made by <a href="https://github.com/Roseherd">Richard Addo-Owusu</a> <span aria-hidden="true">·</span>
+      <a href="https://github.com/Roseherd/KR-Encoder">Open source</a>&nbsp;<span aria-hidden="true">·</span>&nbsp;<span class="version">v1.0.0</span></p>
+  </footer>
 
   <dialog id="tutorial" class="tutorial" aria-labelledby="tutorial-title">
     <div class="tutorial-head">

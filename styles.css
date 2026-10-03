@@ -276,6 +276,18 @@ fieldset.rsa > button { margin-top: 10px; }
 .file-status strong { color: var(--text); }
 .file-status button { flex: 0 0 auto; padding: 4px 12px; font-size: 0.85rem; }
 
+/* ---- footer ---- */
+.site-footer {
+  width: min(720px, 100% - 32px);
+  margin: 0 auto 28px;
+  text-align: center;
+  color: var(--muted);
+  font: 0.85rem/1.7 var(--font-mono);
+}
+.site-footer p { margin: 0; }
+.site-footer a { color: var(--accent-2); text-underline-offset: 3px; white-space: nowrap; }
+.site-footer a:hover { color: var(--accent); }
+
 /* ---- error/info popup ---- */
 dialog {
   border: 1px solid var(--line);
